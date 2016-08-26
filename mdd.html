@@ -2897,6 +2897,7 @@ function kickOff(aggressiveCollect) {
 
   var editorFrame = loader.createFrame();
   loader.on('load', loader_onloaded);
+  var updateHeaderToolbar;
 
   function loader_onloaded(loadedDrive) {
 
@@ -2953,6 +2954,53 @@ function kickOff(aggressiveCollect) {
           shellDoc.body.innerHTML = renderMD;
         }
       }
+
+      var firstHeader =
+        (shellDoc.getElementsByTagName('h1')||[])[0] ||
+        (shellDoc.getElementsByTagName('h2')||[])[0] ||
+        (shellDoc.getElementsByTagName('h3')||[])[0];
+
+      if (firstHeader) {
+        // let it settle just in case:
+        // we're going to read location information
+        setTimeout(function() {
+          updateHeaderToolbar();
+          window.onscroll = updateHeaderToolbar;
+          loader.shell.contentWindow.onscroll = updateHeaderToolbar;
+        }, 10);
+
+        var headerToolbar;
+
+        updateHeaderToolbar = function() {
+          var scrollPos = firstHeader.offsetTop - loader.shell.contentWindow.scrollY;
+          if (scrollPos<0 && !/^none$/i.test(loader.shell.style.display)) {
+            if (headerToolbar) {
+              headerToolbar.style.display = 'block';
+            }
+            else {
+              headerToolbar = document.createElement('div');
+              headerToolbar.style.cssText =
+                'position: fixed; '+
+                'top: 0px; left: 0px; '+
+                'z-index: 99999; '+
+                'right: 1em; '+
+                'margin: 0px; padding: 0px; padding-left: 0.5em; '+
+                'margin-right: 1em; '+
+                'background: white; border-bottom: solid 1px silver;';
+              headerToolbar.innerHTML= firstHeader.outerHTML;
+              var injectedHeader = headerToolbar.getElementsByTagName(firstHeader.tagName)[0];
+              if (injectedHeader) {
+                injectedHeader.style.cssText = 'margin: 0px; padding: 0px;';
+              }
+
+              document.body.appendChild(headerToolbar);
+            }
+          }
+          else {
+            if (headerToolbar) headerToolbar.style.display = 'none';
+          }
+        };
+      }
     };
 
     window.renderContent = renderContent;
@@ -2962,19 +3010,26 @@ function kickOff(aggressiveCollect) {
 
     loader.fadeToUI();
 
-    var foc = (shellDoc.body.children ? shellDoc.body.children[0]:null)||shellDoc.body;
-    foc.focus();
+    var focParent = (shellDoc.body.children ? shellDoc.body.children[0]:null)||shellDoc.body;
+    var focInput = shellDoc.createElement('input');
+    focInput.style.cssText = 'position: fixed; left: 50%; top: 50%; width: 1px; height: 1px; border: none; background: white; opacity: 0.01;';
+    focParent.appendChild(focInput);
+    focInput.focus();
     setTimeout(function() {
-      foc = (shellDoc.body.children ? shellDoc.body.children[0]:null)||shellDoc.body;
-      foc.focus();
-      var inp = shellDoc.createElement('input');
-      inp.style.cssText = 'width: 0px; height: 0px; border: none; padding: 0; margin: 0; background: transparent;';
-      foc.appendChild(inp);
-      inp.focus();
-      foc.removeChild(inp);
+      focInput.focus();
 
+      setTimeout(function() {
+        focParent.removeChild(focInput);
+      }, 10);
+
+      loader.shell.contentWindow.onkeydown = onkeydown_handleF4;
+      loader.on(loader.shell.contentWindow, 'keydown', onkeydown_handleF4);
       loader.on(shellDoc.body, 'keydown', onkeydown_handleF4);
+
+      window.onkeydown = onkeydown_handleF4;
+      loader.on(window, 'keydown', onkeydown_handleF4);
       loader.on(document.body, 'keydown', onkeydown_handleF4);
+
       loader.on((editorFrame.contentWindow||editorFrame.window).document.body, 'keydown', onkeydown_handleF4);
     }, 10);
 
@@ -2996,12 +3051,22 @@ function kickOff(aggressiveCollect) {
     else {
       editorFrame.style.display = 'none';
       loader.shell.style.display = 'block';
+      var shellDoc = loader.shell.contentWindow.document;
 
+      var focParent = (shellDoc.body.children ? shellDoc.body.children[0]:null)||shellDoc.body;
+      var focInput = document.createElement('input');
+      focInput.style.cssText = 'position: fixed; left: 50%; top: 50%; width: 1px; height: 1px; border: none; background: white; opacity: 0.01;';
+      focParent.appendChild(focInput);
+      focInput.focus();
       setTimeout(function() {
-        var shellDoc = loader.shell.contentWindow.document;
-        shellDoc.body.focus();
-      }, 5);
+        focInput.focus();
+
+        setTimeout(function() {
+          focParent.removeChild(focInput);
+        }, 10);
+      }, 10);
     }
+    if (updateHeaderToolbar) updateHeaderToolbar();
 
     loader.updateSize();
     setTimeout(function() {
