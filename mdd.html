@@ -2885,6 +2885,11 @@ function runMdd() {
 function kickOff(aggressiveCollect) {
   loader(window, document);
 
+  var closeMenu;
+  var enforceShowMenu;
+  var updateHeaderToolbar;
+  var editorMode;
+
   var foundThisScript = thisScript?false:true;
   var contentElements = [];
   loader.on('domnode', function(node, type, entity) {
@@ -2897,7 +2902,6 @@ function kickOff(aggressiveCollect) {
 
   var editorFrame = loader.createFrame();
   loader.on('load', loader_onloaded);
-  var updateHeaderToolbar;
 
   function loader_onloaded(loadedDrive) {
 
@@ -2973,7 +2977,22 @@ function kickOff(aggressiveCollect) {
 
         updateHeaderToolbar = function() {
           var scrollPos = firstHeader.offsetTop - loader.shell.contentWindow.scrollY;
+
+          var showMenu;
+
           if (scrollPos<0 && !/^none$/i.test(loader.shell.style.display)) {
+            showMenu = true;
+          }
+          else if (editorMode) {
+            showMenu = true;
+          }
+          else {
+            showMenu = false;
+          }
+
+          if (enforceShowMenu) showMenu = true;
+
+          if (showMenu) {
             if (headerToolbar) {
               headerToolbar.style.display = 'block';
             }
@@ -2984,16 +3003,105 @@ function kickOff(aggressiveCollect) {
                 'top: 0px; left: 0px; '+
                 'z-index: 99999; '+
                 'right: 1em; '+
-                'margin: 0px; padding: 0px; padding-left: 0.5em; '+
+                'margin: 0px; padding: 0px; '+
                 'margin-right: 1em; '+
-                'background: white; border-bottom: solid 1px silver;';
-              headerToolbar.innerHTML= firstHeader.outerHTML;
-              var injectedHeader = headerToolbar.getElementsByTagName(firstHeader.tagName)[0];
+                'box-shadow: 0px 0px 0.8em silver; ';
+              var toolbarInner = document.createElement('div');
+              toolbarInner.style.cssText =
+                'margin-left: -1px; margin-right: -0.8em; padding: 0; padding-left: 0.5em; ' +
+                'background: white; border-bottom: solid 1px silver; '+
+                'overflow: hidden; ';
+              headerToolbar.appendChild(toolbarInner);
+
+              toolbarInner.innerHTML= firstHeader.outerHTML;
+              var injectedHeader = toolbarInner.getElementsByTagName(firstHeader.tagName)[0];
               if (injectedHeader) {
-                injectedHeader.style.cssText = 'margin: 0px; padding: 0px;';
+                injectedHeader.style.cssText = 'margin: 0px; padding: 0px; white-space: nowrap;';
               }
 
               document.body.appendChild(headerToolbar);
+
+              if (injectedHeader) {
+                var menuButton = document.createElement('div');
+                menuButton.style.cssText =
+                  'float: right; '+
+                  'height: '+((injectedHeader.offsetHeight|0)-2) + 'px; '+
+                  'width: '+((injectedHeader.offsetHeight|0)-2) +'px; '+
+                  'border: solid 1px transparent; background: white; '+
+                  'cursor: pointer; '+
+                  'font-size: 200%; '+
+                  'white-space: nowrap; '+
+                  'line-height: 0.5em; '+
+                  'z-index: 10; ';
+                if ('textContent' in menuButton) menuButton.textContent = '...';
+                else menuButton.innerText = '...';
+                toolbarInner.insertBefore(menuButton, injectedHeader);
+
+                menuButton.onclick = function() {
+                  if (closeMenu) {
+                    closeMenu();
+                    return;
+                  }
+
+                  var shade = document.createElement('div');
+                  shade.style.cssText =
+                    'position: fixed; '+
+                    'width: 100%; height: 100%; '+
+                    'background: white; opacity: 0.1; '+
+                    'z-index: 20; ';
+                  document.body.appendChild(shade);
+
+                  var menuBox = document.createElement('div');
+                  menuBox.style.cssText =
+                    'position: fixed; '+
+                    'top: '+(toolbarInner.offsetHeight-2)+'px; right: 1.2em; '+
+                    'width: '+Math.min(document.body.offsetWidth, menuButton.offsetWidth*8)+'px; '+
+                    'z-index: 25; '+
+                    'border: solid 1px silver; '+
+                    'background: white; '+
+                    'padding: 0.5em; padding-left: 1em; padding-right: 0.9em; '+
+                    'transform: translateY(-1em); transition: transform 0.2s; ';
+
+                  var headers = [];
+                  // TODO: go through h1,h2,h3 and add table of contents (try to highlight the current section too)
+                  //var firstHeader =
+                  //  (shellDoc.getElementsByTagName('h1')||[])[0] ||
+                  //  (shellDoc.getElementsByTagName('h2')||[])[0] ||
+                  //  (shellDoc.getElementsByTagName('h3')||[])[0];
+
+
+                  if ('textContent' in menuBox) menuBox.textContent = 'Edit Save {help}';
+                  else menuBox.innerText = 'Edit Save {help}';
+
+                  document.body.appendChild(menuBox);
+
+                  setTimeout(function() {
+                    menuBox.style.transform = 'translateY(0)';
+                    menuBox.focus();
+                  },1);
+
+                  shade.onclick = function() { close(); };
+
+                  closeMenu = close;
+
+                  function close() {
+                    if (close._alreadyClosing) return;
+                    close._alreadyClosing = true;
+                    if (shade.parentElement) shade.parentElement.removeChild(shade);
+                    if (menuBox.parentElement) {
+                      menuBox.style.transition = 'opacity 0.3s';
+                      setTimeout(function() {
+                        menuBox.style.opacity = 0;
+                        setTimeout(function() {
+                          closeMenu = null;
+                          if (menuBox.parentElement)
+                            menuBox.parentElement.removeChild(menuBox);
+                        }, 500);
+                      },1);
+                    }
+                  }
+                };
+              }
             }
           }
           else {
@@ -3042,13 +3150,18 @@ function kickOff(aggressiveCollect) {
     if (switchMode.lastSwitchTime+switchAnimationTime>now) return;
 
     switchMode.lastSwitchTime = now;
-    if (loader.shell.style.display==='block' || !loader.shell.style.display) {
+    if (!editorMode) {
+      editorMode = true;
+      updateHeaderToolbar();
       if (!switchMode.editorInitialized)
       initEditor();
       editorFrame.style.display = 'block';
       loader.shell.style.display = 'none';
     }
     else {
+      editorMode = false;
+      enforceShowMenu = true;
+      updateHeaderToolbar();
       editorFrame.style.display = 'none';
       loader.shell.style.display = 'block';
       var shellDoc = loader.shell.contentWindow.document;
@@ -3082,6 +3195,7 @@ function kickOff(aggressiveCollect) {
       '<'+'script'+'>window.CodeMirror = null;'+codemirror_js+'</'+'script'+'>'+
       '<'+'style'+'>'+
       '.CodeMirror { height: 100%; }'+
+      '* { box-sizing: border-box; } '+
       '</'+'style'+'>'+
       '<'+'script'+'>'+runEditor+'\nrunEditor();\n'+'//# '+'sourceURL=/editor.js</'+'script'+'>');
     if (editorDoc.close) editorDoc.close();
@@ -3091,7 +3205,11 @@ function kickOff(aggressiveCollect) {
     window.onload = function() {
       var content = parent.content;
       console.log(document.body);
-      var cm = window.cm = CodeMirror(document.body, {
+      var inner = document.createElement('div');
+      document.body.style.cssText = 'padding: 0; margin: 0; border: none; padding-top: 2.5em; height: 100%; box-sizing: border-box; overflow: hidden;';
+      inner.style.cssText = 'height: 100%;';
+      document.body.appendChild(inner);
+      var cm = window.cm = CodeMirror(inner, {
         value: content,
         mode: 'gfm',
         lineNumbers: true
@@ -3118,6 +3236,17 @@ function kickOff(aggressiveCollect) {
       if ('cancelBubble' in e) e.cancelBubble = true;
       if (e.preventDefault) e.preventDefault();
       switchMode();
+    }
+    else if (e.keyCode===27) { //Escape
+      if (closeMenu) {
+        closeMenu();
+        if ('cancelBubble' in e) e.cancelBubble = true;
+        if (e.preventDefault) e.preventDefault();
+      }
+      else {
+        enforceShowMenu = !enforceShowMenu;
+        updateHeaderToolbar();
+      }
     }
   } 
 }
