@@ -3050,7 +3050,12 @@ function kickOff(aggressiveCollect) {
                 else menuButton.innerText = '...';
                 toolbarInner.insertBefore(menuButton, injectedHeader);
 
-                menuButton.onclick = function() {
+                menuButton.onclick = function(e) {
+                  if (e) {
+                    if ('cancelBubble' in e) e.cancelBubble = true;
+                    if (e.preventDefault) e.preventDefault();
+                  }
+
                   if (closeMenu) {
                     closeMenu();
                     return;
@@ -3109,6 +3114,8 @@ function kickOff(aggressiveCollect) {
 
                   var linkMenuEntryClick = function(entry, hdr) {
                     entry.onclick = function() {
+                      if ('cancelBubble' in e) e.cancelBubble = true;
+                      if (e.preventDefault) e.preventDefault();
                       if (closeMenu) closeMenu();
                       if (hdr.scrollIntoView)
                         hdr.scrollIntoView();
@@ -3141,6 +3148,8 @@ function kickOff(aggressiveCollect) {
                   if ('textContent' in editButton) editButton.textContent = editorMode ? 'Complete' : 'Edit';
                   else editButton.innerText = editorMode ? 'Complete' : 'Edit';
                   editButton.onclick = function() {
+                    if ('cancelBubble' in e) e.cancelBubble = true;
+                    if (e.preventDefault) e.preventDefault();
                     if (closeMenu) closeMenu();
                     switchMode();
                   };
@@ -3151,6 +3160,8 @@ function kickOff(aggressiveCollect) {
                   if ('textContent' in saveButton) saveButton.textContent = 'Save';
                   else saveButton.innerText = 'Save';
                   saveButton.onclick = function() {
+                    if ('cancelBubble' in e) e.cancelBubble = true;
+                    if (e.preventDefault) e.preventDefault();
                     if (closeMenu) closeMenu();
                     saveDoc();
                   };
@@ -3164,7 +3175,11 @@ function kickOff(aggressiveCollect) {
                     menuBox.focus();
                   },1);
 
-                  shade.onclick = function() { close(); };
+                  shade.onclick = function() {
+                    if ('cancelBubble' in e) e.cancelBubble = true;
+                    if (e.preventDefault) e.preventDefault();
+                    close();
+                  };
 
                   closeMenu = close;
 
@@ -3240,6 +3255,7 @@ function kickOff(aggressiveCollect) {
       'position: fixed; '+
       'margin: -10%; '+
       'width: 110%; height: 110%; '+
+      'min-width: '+document.body.clientWidth*2+'px; min-height: '+document.body.clientHeight*2+'px; '+
       'background: black; opacity: 0.15; '+
       'z-index: 1000000; ';
     document.body.appendChild(shade);
