@@ -3017,19 +3017,23 @@ function kickOff(aggressiveCollect) {
                 'z-index: 99999; '+
                 'right: 1em; '+
                 'margin: 0px; padding: 0px; '+
-                'margin-right: 1em; '+
-                'box-shadow: 0px 0px 0.8em silver; ';
+                'margin-right: 2em; '+
+                'box-shadow: 0px 0px 3em silver; ';
               var toolbarInner = document.createElement('div');
               toolbarInner.style.cssText =
-                'margin-left: -1px; margin-right: -0.8em; padding: 0; padding-left: 0.5em; ' +
+                'margin-left: -1px; margin-right: -2em; padding: 0; ' +
                 'background: white; border-bottom: solid 1px silver; '+
                 'overflow: hidden; ';
               headerToolbar.appendChild(toolbarInner);
 
               toolbarInner.innerHTML= firstHeader.outerHTML;
+
               var injectedHeader = toolbarInner.getElementsByTagName(firstHeader.tagName)[0];
               if (injectedHeader) {
-                injectedHeader.style.cssText = 'margin: 0px; padding: 0px; white-space: nowrap;';
+                injectedHeader.style.cssText =
+                  'margin-left: '+firstHeader.offsetLeft+'px; '+
+                  'margin-top: '+firstHeader.offsetTop+'px; margin-bottom: '+firstHeader.offsetTop+'px; '+
+                  'white-space: nowrap;';
               }
 
               document.body.appendChild(headerToolbar);
@@ -3040,9 +3044,10 @@ function kickOff(aggressiveCollect) {
                   'float: right; '+
                   'height: '+((injectedHeader.offsetHeight|0)-2) + 'px; '+
                   'width: '+((injectedHeader.offsetHeight|0)-2) +'px; '+
+                  'margin-right: 0.3em; '+
                   'border: solid 1px transparent; background: white; '+
                   'cursor: pointer; '+
-                  'font-size: 200%; '+
+                  'font-size: 300%; '+
                   'white-space: nowrap; '+
                   'line-height: 0.5em; '+
                   'z-index: 10; ';
