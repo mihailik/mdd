@@ -2908,18 +2908,26 @@ function kickOff(aggressiveCollect) {
     var shellDoc = loader.shell.contentWindow.document;
 
     var content = loadedDrive.read('/content');
-    if (!content && contentElements.length) {
-      var combine = [];
-      for (var i = 0; i < contentElements.length; i++) {
-        var html =
-          'outerHTML' in contentElements[i] ? contentElements[i].outerHTML :
-          contentElements[i].nodeValue ||
-          contentElements[i].textContent ||
-          contentElements[i].text;
-        combine.push(html);
-      }
+    if (!content) {
+      if (contentElements.length) {
+        var combine = [];
+        for (var i = 0; i < contentElements.length; i++) {
+          var html =
+            'outerHTML' in contentElements[i] ? contentElements[i].outerHTML :
+            contentElements[i].nodeValue ||
+            contentElements[i].textContent ||
+            contentElements[i].text;
+          combine.push(html);
+        }
 
-      content = combine.join('').replace(/^\s+/, '');
+        content = combine.join('').replace(/^\s+/, '');
+      }
+      else {
+        content =
+          '# Markdown Document\n'+
+          '\n'+
+          'Empty document\n';
+      }
     }
 
     var firstRender = true;
