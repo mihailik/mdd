@@ -1,4 +1,4 @@
-<script src=mdd.html></script>
+<script src=index.html></script>
 
 # Markdown Document
 

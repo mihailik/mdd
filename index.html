@@ -2992,9 +2992,14 @@ function kickOff(aggressiveCollect) {
 
           if (enforceShowMenu) showMenu = true;
 
+          if (firstHeader)
+            document.title = firstHeader.textContent || firstHeader.innerText;
+
           if (showMenu) {
             if (headerToolbar) {
               headerToolbar.style.display = 'block';
+              if (toolbarInner && firstHeader)
+                toolbarInner.innerHTML= firstHeader.outerHTML;
             }
             else {
               headerToolbar = document.createElement('div');
@@ -3062,16 +3067,87 @@ function kickOff(aggressiveCollect) {
                     'padding: 0.5em; padding-left: 1em; padding-right: 0.9em; '+
                     'transform: translateY(-1em); transition: transform 0.2s; ';
 
-                  var headers = [];
-                  // TODO: go through h1,h2,h3 and add table of contents (try to highlight the current section too)
-                  //var firstHeader =
-                  //  (shellDoc.getElementsByTagName('h1')||[])[0] ||
-                  //  (shellDoc.getElementsByTagName('h2')||[])[0] ||
-                  //  (shellDoc.getElementsByTagName('h3')||[])[0];
+                  var headersList = [];
+                  if (loader.shell.contentDocument.querySelectorAll) {
+                    headersList = loader.shell.contentDocument.querySelectorAll('h1,h2,h3');
+                  }
+                  else {
+                    headersList = loader.shell.contentDocument.all ||[];
+                  }
 
+                  var headers1 = [];
+                  var headers12 = [];
+                  var headers123 = [];
+                  for (var i = 0; i < headersList.length; i++) {
+                    var el = headersList[i];
+                    if (el.tagName==='h1' || el.tagName==='H1') {
+                      headers1.push(el);
+                      headers12.push(el);
+                      headers123.push(el);
+                    }
+                    else if (el.tagName==='h2' || el.tagName==='H2') {
+                      headers12.push(el);
+                      headers123.push(el);
+                    }
+                    else if (el.tagName==='h3' || el.tagName==='H3') {
+                      headers123.push(el);
+                    }
+                  }
 
-                  if ('textContent' in menuBox) menuBox.textContent = 'Edit Save {help}';
-                  else menuBox.innerText = 'Edit Save {help}';
+                  var showHeaders = [];
+                  if (headers12.length<8) showHeaders = headers123;
+                  else if (headers1.length<8) showHeaders = headers12;
+                  else showHeaders = headers1;
+
+                  var linkMenuEntryClick = function(entry, hdr) {
+                    entry.onclick = function() {
+                      if (closeMenu) closeMenu();
+                      if (hdr.scrollIntoView)
+                        hdr.scrollIntoView();
+                    };
+                  };
+
+                  for (var i = 0; i < showHeaders.length;i++) {
+                    var entry = document.createElement('li');
+                    var hdr = showHeaders[i];
+                    if ('textContent' in entry) entry.textContent = hdr.textContent;
+                    entry.innerText = hdr.innerText;
+                    var lvl = hdr.tagName.charAt(1)|0;
+                    entry.style.cssText =
+                      'font-size: '+(lvl==1 ? '120%' : lvl==2 ? '107%': '103%')+'; '+
+                      'padding-left: '+(lvl==1 ? '4px' : lvl==2 ? '8px': '10px')+'; '+
+                      'font-weight: bold; '+
+                      'cursor: pointer; '+
+                      'overflow: hidden; white-space: nowrap; ';
+                    menuBox.appendChild(entry);
+                    linkMenuEntryClick(entry, showHeaders[i]);
+                  }
+
+                  var buttonSpan= document.createElement('span');
+                  buttonSpan.style.display = 'inline-block';
+                  buttonSpan.style.borderTop = 'solid 1px silver';
+                  buttonSpan.style.padding = '4px';
+                  buttonSpan.style.marginTop = '8px';
+
+                  var editButton = document.createElement('button');
+                  if ('textContent' in editButton) editButton.textContent = editorMode ? 'Complete' : 'Edit';
+                  else editButton.innerText = editorMode ? 'Complete' : 'Edit';
+                  editButton.onclick = function() {
+                    if (closeMenu) closeMenu();
+                    switchMode();
+                  };
+                  editButton.style.marginRight = '0.5em';
+                  buttonSpan.appendChild(editButton);
+
+                  var saveButton = document.createElement('button');
+                  if ('textContent' in saveButton) saveButton.textContent = 'Save';
+                  else saveButton.innerText = 'Save';
+                  saveButton.onclick = function() {
+                    if (closeMenu) closeMenu();
+                    saveDoc();
+                  };
+                  buttonSpan.appendChild(saveButton);
+                  menuBox.appendChild(buttonSpan);
 
                   document.body.appendChild(menuBox);
 
@@ -3113,6 +3189,7 @@ function kickOff(aggressiveCollect) {
 
     window.renderContent = renderContent;
     window.switchMode = switchMode;
+    window.saveDoc = saveDoc;
 
     renderContent(content);
 
@@ -3142,6 +3219,30 @@ function kickOff(aggressiveCollect) {
     }, 10);
 
 
+  }
+
+  function saveDoc() {
+    var shade = document.createElement('div');
+    shade.style.cssText =
+      'position: fixed; '+
+      'margin: -10%; '+
+      'width: 110%; height: 110%; '+
+      'background: black; opacity: 0.15; '+
+      'z-index: 1000000; ';
+    document.body.appendChild(shade);
+    shade.onclick = close;
+
+    var saveDialog = document.createElement('div');
+    saveDialog.style.cssText =
+      'background: white; border: solid 1px silver; padding: 0.5em; padding-right: 1em; padding-left: 1em; '+
+      'box-shadow: 4px 4px 10px silver; '+
+      'width: 5em; max-width: 60%; height: 5em; max-height: 60%; ';
+    document.body.appendChild(saveDialog);
+
+    function close() {
+      if (shade.parentElement) shade.parentElement.removeChild(shade);
+      if (saveDialog.parentElement) saveDialog.parentElement.removeChild(saveDialog);
+    };
   }
 
   function switchMode() {
