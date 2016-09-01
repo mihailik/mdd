@@ -3201,6 +3201,11 @@ function kickOff(aggressiveCollect) {
 
     renderContent(content);
 
+    shellDoc.body.onclick = function() {
+      enforceShowMenu = !enforceShowMenu;
+      updateHeaderToolbar();
+    };
+
     loader.fadeToUI();
 
     var focParent = (shellDoc.body.children ? shellDoc.body.children[0]:null)||shellDoc.body;
