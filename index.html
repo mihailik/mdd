@@ -3096,7 +3096,7 @@ function kickOff(aggressiveCollect) {
               }
 
               document.body.appendChild(headerToolbar);
-              headerToolbarHeight = headerToolbar.offsetHeight + (firstHeader.offsetTop+firstHeader.offsetTop);
+              headerToolbarHeight = headerToolbar.offsetHeight +firstHeader.offsetTop;
               window.headerToolbarHeight = headerToolbarHeight;
 
               if (injectedHeader) {
@@ -3384,28 +3384,32 @@ function kickOff(aggressiveCollect) {
   }
 
   function initEditor() {
-    var editorDoc = (editorFrame.contentWindow||editorFrame.window).document;
+    var editorWin = editorFrame.contentWindow||editorFrame.window;
+    var editorDoc = editorWin.document;
     if (editorDoc.open) editorDoc.open();
     editorDoc.write(
       '<'+'style'+'>'+codemirror_css+'</'+'style'+'>'+
       '<'+'script'+'>window.CodeMirror = null;'+codemirror_js+'</'+'script'+'>'+
       '<'+'style'+'>'+
       '.CodeMirror { height: 100%; }'+
+      '.CodeMirror-lines { padding-top: '+headerToolbarHeight+'px; }'+
       '* { box-sizing: border-box; } '+
-      '</'+'style'+'>'+
-      '<'+'script'+'>'+runEditor+'\nrunEditor();\n'+'//# '+'sourceURL=/editor.js</'+'script'+'>');
+      '</'+'style'+'>');
     if (editorDoc.close) editorDoc.close();
+    runEditorWith(editorWin, editorDoc, editorWin.CodeMirror);
   }
 
-  function runEditor() {
-    window.onload = function() {
+  function runEditorWith(window, document, CodeMirror) {
+    runEditor();
+    function runEditor() {
       var content = parent.content;
       console.log(document.body);
       var inner = document.createElement('div');
-      document.body.style.cssText = 'padding: 0; margin: 0; border: none; padding-top: '+parent.headerToolbarHeight+'px; height: 100%; box-sizing: border-box; overflow: hidden;';
+      document.body.style.cssText = 'padding: 0; margin: 0; border: none; height: 100%; box-sizing: border-box; overflow: hidden;';
       inner.style.cssText = 'height: 100%;';
       document.body.appendChild(inner);
       var cm = window.cm = CodeMirror(inner, {
+        cursorScrollMargin: headerToolbarHeight,
         value: content,
         mode: 'gfm',
         lineNumbers: true
@@ -3422,8 +3426,8 @@ function kickOff(aggressiveCollect) {
           parent.switchMode();
         }
       } 
-    };
 
+    }
   }
 
   function onkeydown_handleF4(e) {
