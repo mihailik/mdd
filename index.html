@@ -3315,7 +3315,14 @@ function kickOff(aggressiveCollect) {
 
   }
 
+  var saveDocCore;
+
   function saveDoc() {
+    if (saveDocCore) saveDocCore();
+    else saveDocInitial();
+  }
+
+  function saveDocInitial() {
     var shade = document.createElement('div');
     shade.style.cssText =
       'position: fixed; '+
@@ -3327,17 +3334,41 @@ function kickOff(aggressiveCollect) {
     document.body.appendChild(shade);
     shade.onclick = close;
 
-    var saveDialog = document.createElement('div');
-    saveDialog.style.cssText =
-      'background: white; border: solid 1px silver; padding: 0.5em; padding-right: 1em; padding-left: 1em; '+
-      'box-shadow: 4px 4px 10px silver; '+
-      'width: 5em; max-width: 60%; height: 5em; max-height: 60%; ';
-    document.body.appendChild(saveDialog);
+    var saveDialogContainer = document.createElement('div');
+    saveDialogContainer.style.cssText =
+      'width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1000000;';
+    saveDialogContainer.innerHTML =
+      '<table cellspacing=0 cellpadding=0 style="'+
+        'font-family: Segoe UI, Ubuntu, Helvetica, Tahoma, Verdata, Sans Serif; '+
+        'width: 100%; height: 100%;"><tr><td style="text-align: center;">'+
+      '<div style="'+
+        'background: white; border: solid 1px silver; padding: 0.5em; padding-right: 1em; padding-left: 1em; '+
+        'box-shadow: 2px 2px 12px black; '+
+        'max-width: 95%; max-height: 95%; '+
+        'display: inline-block;">'+
+        '<div style="margin-bottom: 0.6em; ">Save Document</div>'+
+        '<button>Editable formatted document</button><br>'+
+        '<button>Static formatted document</button><br>'+
+        '<button>Static text only</button><br>'+
+        '<hr>'+
+        'Submit to: <button>GitHub</button> <button>Google Docs</button> <button>DropBox</button><br>'+
+      '</div>'+
+      '</td></tr></table>';
+    var saveDialog = (saveDialogContainer.getElementsByTagName('div')||[])[0];
+    saveDialog.onclick = function(e) {
+      if (e) {
+        if ('cancelBubble' in e) e.cancelBubble = true;
+        if (e.preventDefault) e.preventDefault();
+      }
+    };
+    saveDialogContainer.onclick = close;
+
+    document.body.appendChild(saveDialogContainer);
 
     function close() {
       if (shade.parentElement) shade.parentElement.removeChild(shade);
-      if (saveDialog.parentElement) saveDialog.parentElement.removeChild(saveDialog);
-    };
+      if (saveDialogContainer.parentElement) saveDialogContainer.parentElement.removeChild(saveDialogContainer);
+    }
   }
 
   function switchMode() {
